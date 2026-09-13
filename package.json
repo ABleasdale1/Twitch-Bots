@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "tmi.js": "^1.8.5"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
