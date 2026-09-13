@@ -10,11 +10,10 @@ const { URL } = require("url");
 
 const { CLIENT_ID, CLIENT_SECRET } = process.env;
 
-const REDIRECT_URI = "http://localhost:3000";
-
+const redirectUri = "http://localhost:3000";
 const profile = (process.argv[2] || "bot").toLowerCase();
 
-const PROFILES = {
+const profiles = {
   bot: {
     label: "BOT / MOD account",
     expectedUsernameEnv: "BOT_USERNAME",
@@ -28,7 +27,6 @@ const PROFILES = {
       "moderator:manage:banned_users",
     ],
   },
-
   join: {
     label: "JOIN / PERSONAL account",
     expectedUsernameEnv: "JOIN_USERNAME",
@@ -38,7 +36,7 @@ const PROFILES = {
   },
 };
 
-const selected = PROFILES[profile];
+const selected = profiles[profile];
 
 if (!selected) {
   console.error("Unknown auth profile.");
@@ -59,19 +57,21 @@ const scopes = selected.scopes.join(" ");
 const authUrl =
   "https://id.twitch.tv/oauth2/authorize" +
   `?client_id=${encodeURIComponent(CLIENT_ID)}` +
-  `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-  `&response_type=code` +
+  `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+  "&response_type=code" +
   `&scope=${encodeURIComponent(scopes)}`;
 
 console.log(`\nAuthorising profile: ${profile}`);
 console.log(`Account type: ${selected.label}`);
 console.log(`Expected Twitch account: ${expectedUsername}`);
-console.log("\nIMPORTANT: open this URL while logged into the matching Twitch account.\n");
+console.log(
+  "\nIMPORTANT: open this URL while logged into the matching Twitch account.\n"
+);
 console.log(authUrl);
 console.log("\nWaiting for Twitch redirect on http://localhost:3000 ...\n");
 
 const server = http.createServer(async (req, res) => {
-  const reqUrl = new URL(req.url, REDIRECT_URI);
+  const reqUrl = new URL(req.url, redirectUri);
   const code = reqUrl.searchParams.get("code");
 
   if (!code) {
@@ -81,7 +81,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+    const tokenResponse = await fetch("https://id.twitch.tv/oauth2/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -91,13 +91,13 @@ const server = http.createServer(async (req, res) => {
         client_secret: CLIENT_SECRET,
         code,
         grant_type: "authorization_code",
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 
-    const data = await tokenRes.json();
+    const data = await tokenResponse.json();
 
-    if (!tokenRes.ok) {
+    if (!tokenResponse.ok) {
       console.error(data);
       res.writeHead(500);
       res.end("Token exchange failed. Check terminal.");
@@ -112,8 +112,8 @@ const server = http.createServer(async (req, res) => {
     res.end("Success. You can close this tab and check your terminal.");
 
     server.close();
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
     res.writeHead(500);
     res.end("Error. Check terminal.");
   }

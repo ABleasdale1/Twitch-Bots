@@ -1,11 +1,19 @@
 // lvlBot.js
 
-require("dotenv").config({ path: require("path").join(__dirname, ".env"), quiet: true });
+require("dotenv").config({
+  path: require("path").join(__dirname, ".env"),
+  quiet: true,
+});
 
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
-const { requireSingleInstance, createChatClient, safeAsync, startBotRuntime } = require("./utils/botRuntime");
+const {
+  requireSingleInstance,
+  createChatClient,
+  safeAsync,
+  startBotRuntime,
+} = require("./utils/botRuntime");
 const { createMessageDeduper } = require("./utils/messageDeduper");
 
 const { ensureValidToken } = require("./tokenManager");
@@ -29,56 +37,48 @@ const alreadySeenMessage = createMessageDeduper();
 // Paths
 // -----------------------------------------------------------------------------
 
-const DATA_DIRECTORY = path.join(__dirname, "data");
-const LEVELS_PATH = path.join(DATA_DIRECTORY, "lvls.json");
-const ADMIN_COMMANDS_PATH = path.join(
-  DATA_DIRECTORY,
-  "admin-commands.txt"
-);
-
-const XP_BOOST_PATH = path.join(
-  DATA_DIRECTORY,
-  "xp-boost.json"
-);
+const dataDirectory = path.join(__dirname, "data");
+const levelsPath = path.join(dataDirectory, "lvls.json");
+const adminCommandsPath = path.join(dataDirectory, "admin-commands.txt");
+const xpBoostPath = path.join(dataDirectory, "xp-boost.json");
 
 // How often the bot checks admin-commands.txt.
-const ADMIN_COMMAND_POLL_MS = 1000;
+const adminCommandPollMs = 1000;
 
 // -----------------------------------------------------------------------------
 // XP configuration
 // -----------------------------------------------------------------------------
 
-const MIN_XP_PER_MESSAGE = 5;
-const MAX_XP_PER_MESSAGE = 10;
-const XP_COOLDOWN_MS = 10 * 1000;
-const MIN_MESSAGE_LENGTH = 5;
-const ANNOUNCE_LEVEL_UPS = true;
-const TOP_LIMIT = 5;
+const minXpPerMessage = 5;
+const maxXpPerMessage = 10;
+const xpCooldownMs = 10 * 1000;
+const minMessageLength = 5;
+const announceLevelUps = true;
+const topLimit = 5;
 
 // -----------------------------------------------------------------------------
 // Daily reward settings.
 // -----------------------------------------------------------------------------
-const DAILY_MIN_XP = 100;
-const DAILY_MAX_XP = 250;
-const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const dailyMinXp = 100;
+const dailyMaxXp = 250;
+const dailyCooldownMs = 24 * 60 * 60 * 1000;
 
 // -----------------------------------------------------------------------------
 // Temporary XP boost settings
 // -----------------------------------------------------------------------------
 
-const MIN_XP_BOOST_MULTIPLIER = 1;
-const MAX_XP_BOOST_MULTIPLIER = 100;
-const MAX_XP_BOOST_DURATION_MS =
-  30 * 24 * 60 * 60 * 1000;
+const minXpBoostMultiplier = 1;
+const maxXpBoostMultiplier = 100;
+const maxXpBoostDurationMs = 30 * 24 * 60 * 60 * 1000;
 
 // False means !daily rewards are not multiplied.
-const XP_BOOST_APPLIES_TO_DAILY = false;
+const xpBoostAppliesToDaily = false;
 
 // -----------------------------------------------------------------------------
 // Known bots that should not receive XP
 // -----------------------------------------------------------------------------
 
-const BOT_USERNAMES = new Set([
+const botUsernames = new Set([
   BOT_USERNAME.toLowerCase(),
 
   // Broadcaster
@@ -163,18 +163,26 @@ async function startLevelBot() {
       `Token refresh failed: ${formatError(error)}`
     );
 
-    setStatusLine(
-      "LEVEL",
-      "Fix",
-      "Try running: node auth.js bot"
-    );
+    setStatusLine("LEVEL", "Fix", "Try running: node auth.js bot");
 
     process.exit(1);
   }
 
-  client = createChatClient({ username: BOT_USERNAME, channel: TWITCH_CHANNEL, profile: "bot" });
+  client = createChatClient({
+    username: BOT_USERNAME,
+    channel: TWITCH_CHANNEL,
+    profile: "bot",
+  });
+
   runtime = startBotRuntime({
-    prefix: "LEVEL", connections: [{ client, channel: TWITCH_CHANNEL, profile: "bot" }],
+    prefix: "LEVEL",
+    connections: [
+      {
+        client,
+        channel: TWITCH_CHANNEL,
+        profile: "bot",
+      },
+    ],
     onFatal: fatalLevelBot,
   });
 
@@ -182,7 +190,12 @@ async function startLevelBot() {
   setupTerminalCommands();
   setupAdminCommandFile();
 
-  setStatusLine("LEVEL", "Connection", `Connecting to #${TWITCH_CHANNEL} as ${BOT_USERNAME}...`);
+  setStatusLine(
+    "LEVEL",
+    "Connection",
+    `Connecting to #${TWITCH_CHANNEL} as ${BOT_USERNAME}...`
+  );
+
   // Only tmi owns reconnect attempts. A failed initial login exits to systemd.
   await client.connect();
 }
@@ -207,17 +220,17 @@ function initialiseDashboard(statusMessage) {
   setStatusLine(
     "LEVEL",
     "Config",
-    `${MIN_XP_PER_MESSAGE}-${MAX_XP_PER_MESSAGE} XP/msg, ` +
-      `cooldown=${Math.round(XP_COOLDOWN_MS / 1000)}s, ` +
-      `minLength=${MIN_MESSAGE_LENGTH}`
+    `${minXpPerMessage}-${maxXpPerMessage} XP/msg, ` +
+      `cooldown=${Math.round(xpCooldownMs / 1000)}s, ` +
+      `minLength=${minMessageLength}`
   );
 
-  setStatusLine("LEVEL", "Levels File", LEVELS_PATH);
+  setStatusLine("LEVEL", "Levels File", levelsPath);
 
   setStatusLine(
     "LEVEL",
     "Admin File",
-    `${ADMIN_COMMANDS_PATH} — one command per line`
+    `${adminCommandsPath} — one command per line`
   );
 
   setStatusLine(
@@ -267,23 +280,23 @@ function updateTotalsLine() {
 // -----------------------------------------------------------------------------
 
 function ensureDataFiles() {
-  if (!fs.existsSync(DATA_DIRECTORY)) {
-    fs.mkdirSync(DATA_DIRECTORY, {
+  if (!fs.existsSync(dataDirectory)) {
+    fs.mkdirSync(dataDirectory, {
       recursive: true,
     });
   }
 
-  if (!fs.existsSync(LEVELS_PATH)) {
-    fs.writeFileSync(LEVELS_PATH, "{}\n", "utf8");
+  if (!fs.existsSync(levelsPath)) {
+    fs.writeFileSync(levelsPath, "{}\n", "utf8");
   }
 
-  if (!fs.existsSync(ADMIN_COMMANDS_PATH)) {
-    fs.writeFileSync(ADMIN_COMMANDS_PATH, "", "utf8");
+  if (!fs.existsSync(adminCommandsPath)) {
+    fs.writeFileSync(adminCommandsPath, "", "utf8");
   }
 
-  if (!fs.existsSync(XP_BOOST_PATH)) {
+  if (!fs.existsSync(xpBoostPath)) {
     fs.writeFileSync(
-      XP_BOOST_PATH,
+      xpBoostPath,
       `${JSON.stringify(
         {
           multiplier: 1,
@@ -301,7 +314,7 @@ function ensureDataFiles() {
 
 function loadLevels() {
   try {
-    const raw = fs.readFileSync(LEVELS_PATH, "utf8").trim();
+    const raw = fs.readFileSync(levelsPath, "utf8").trim();
 
     if (!raw) {
       return {};
@@ -385,7 +398,7 @@ function repairLoadedLevelData() {
 
 function saveLevels() {
   try {
-    const temporaryPath = `${LEVELS_PATH}.tmp`;
+    const temporaryPath = `${levelsPath}.tmp`;
 
     fs.writeFileSync(
       temporaryPath,
@@ -393,7 +406,7 @@ function saveLevels() {
       "utf8"
     );
 
-    fs.renameSync(temporaryPath, LEVELS_PATH);
+    fs.renameSync(temporaryPath, levelsPath);
 
     return true;
   } catch (error) {
@@ -426,7 +439,7 @@ function createInactiveXpBoost() {
 function loadXpBoost() {
   try {
     const raw = fs
-      .readFileSync(XP_BOOST_PATH, "utf8")
+      .readFileSync(xpBoostPath, "utf8")
       .trim();
 
     if (!raw) {
@@ -441,8 +454,8 @@ function loadXpBoost() {
     return {
       multiplier:
         Number.isFinite(multiplier) &&
-        multiplier >= MIN_XP_BOOST_MULTIPLIER &&
-        multiplier <= MAX_XP_BOOST_MULTIPLIER
+        multiplier >= minXpBoostMultiplier &&
+        multiplier <= maxXpBoostMultiplier
           ? multiplier
           : 1,
       startedAt:
@@ -471,7 +484,7 @@ function loadXpBoost() {
 
 function saveXpBoost() {
   try {
-    const temporaryPath = `${XP_BOOST_PATH}.tmp`;
+    const temporaryPath = `${xpBoostPath}.tmp`;
 
     fs.writeFileSync(
       temporaryPath,
@@ -479,7 +492,7 @@ function saveXpBoost() {
       "utf8"
     );
 
-    fs.renameSync(temporaryPath, XP_BOOST_PATH);
+    fs.renameSync(temporaryPath, xpBoostPath);
     return true;
   } catch (error) {
     setStatusLine(
@@ -720,7 +733,7 @@ function isModOrBroadcaster(tags) {
 }
 
 function isKnownBot(username) {
-  return BOT_USERNAMES.has(
+  return botUsernames.has(
     cleanUsername(username)
   );
 }
@@ -757,7 +770,7 @@ function isEligibleForXp({
     };
   }
 
-  if (trimmed.length < MIN_MESSAGE_LENGTH) {
+  if (trimmed.length < minMessageLength) {
     return {
       eligible: false,
       reason: "too short",
@@ -789,15 +802,15 @@ function awardXpIfAllowed(
   const timeSinceLastXp =
     now - (Number(user.lastXpAt) || 0);
 
-  if (timeSinceLastXp < XP_COOLDOWN_MS) {
+  if (timeSinceLastXp < xpCooldownMs) {
     return;
   }
 
   const oldLevel = calculateLevel(user.xp || 0);
 
   const baseXp = randomInt(
-    MIN_XP_PER_MESSAGE,
-    MAX_XP_PER_MESSAGE
+    minXpPerMessage,
+    maxXpPerMessage
   );
 
   const activeMultiplier =
@@ -849,7 +862,7 @@ function awardXpIfAllowed(
       `chat XP`
     );
 
-    if (ANNOUNCE_LEVEL_UPS) {
+    if (announceLevelUps) {
       client
         .say(
           TWITCH_CHANNEL,
@@ -1249,7 +1262,7 @@ async function handleDailyCommand(tags) {
     Number(user.lastDailyAt) || 0;
 
   const nextDailyAt =
-    lastDailyAt + DAILY_COOLDOWN_MS;
+    lastDailyAt + dailyCooldownMs;
 
   if (lastDailyAt > 0 && now < nextDailyAt) {
     const remainingMs = nextDailyAt - now;
@@ -1268,12 +1281,12 @@ async function handleDailyCommand(tags) {
   );
 
   const baseDailyXp = randomInt(
-    DAILY_MIN_XP,
-    DAILY_MAX_XP
+    dailyMinXp,
+    dailyMaxXp
   );
 
   const dailyMultiplier =
-    XP_BOOST_APPLIES_TO_DAILY
+    xpBoostAppliesToDaily
       ? getActiveXpMultiplier()
       : 1;
 
@@ -1321,7 +1334,7 @@ async function handleDailyCommand(tags) {
 function buildLeaderboardText() {
   const sorted = getSortedUsers().slice(
     0,
-    TOP_LIMIT
+    topLimit
   );
 
   if (sorted.length === 0) {
@@ -1402,13 +1415,13 @@ function setupTerminalCommands() {
 function setupAdminCommandFile() {
   setInterval(
     pollAdminCommandFile,
-    ADMIN_COMMAND_POLL_MS
+    adminCommandPollMs
   );
 
   setStatusLine(
     "LEVEL",
     "Admin File",
-    `Watching ${ADMIN_COMMANDS_PATH}`
+    `Watching ${adminCommandsPath}`
   );
 }
 
@@ -1423,9 +1436,9 @@ async function pollAdminCommandFile() {
   adminCommandPollInProgress = true;
 
   try {
-    if (!fs.existsSync(ADMIN_COMMANDS_PATH)) {
+    if (!fs.existsSync(adminCommandsPath)) {
       fs.writeFileSync(
-        ADMIN_COMMANDS_PATH,
+        adminCommandsPath,
         "",
         "utf8"
       );
@@ -1434,7 +1447,7 @@ async function pollAdminCommandFile() {
     }
 
     const contents = fs.readFileSync(
-      ADMIN_COMMANDS_PATH,
+      adminCommandsPath,
       "utf8"
     );
 
@@ -1449,7 +1462,7 @@ async function pollAdminCommandFile() {
      * if one of the command handlers crashes.
      */
     fs.writeFileSync(
-      ADMIN_COMMANDS_PATH,
+      adminCommandsPath,
       "",
       "utf8"
     );
@@ -2008,8 +2021,8 @@ function handleStartBoostCommand(args, startedBy) {
       success: false,
       message:
         `Usage: boost multiplier duration. Example: boost 5 10m. ` +
-        `Multiplier must be between ${MIN_XP_BOOST_MULTIPLIER} and ` +
-        `${MAX_XP_BOOST_MULTIPLIER}.`,
+        `Multiplier must be between ${minXpBoostMultiplier} and ` +
+        `${maxXpBoostMultiplier}.`,
     };
   }
 
@@ -2021,7 +2034,7 @@ function handleStartBoostCommand(args, startedBy) {
     };
   }
 
-  if (durationMs > MAX_XP_BOOST_DURATION_MS) {
+  if (durationMs > maxXpBoostDurationMs) {
     return {
       success: false,
       message:
@@ -2066,8 +2079,8 @@ function parseBoostMultiplier(value) {
 
   if (
     !Number.isFinite(multiplier) ||
-    multiplier < MIN_XP_BOOST_MULTIPLIER ||
-    multiplier > MAX_XP_BOOST_MULTIPLIER
+    multiplier < minXpBoostMultiplier ||
+    multiplier > maxXpBoostMultiplier
   ) {
     return null;
   }

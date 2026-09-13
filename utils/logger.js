@@ -32,7 +32,9 @@ function setStatusLine(prefix, key, message) {
 
   // Services have no TTY. Write only the changed row, never the entire
   // dashboard on every XP event (which multiplied journal/SD-card writes).
-  if (!process.stdout.isTTY && statusLines.get(id)?.message === message) return;
+  if (!process.stdout.isTTY && statusLines.get(id)?.message === message) {
+    return;
+  }
 
   statusLines.set(id, {
     time: getSysTime(),
@@ -44,9 +46,10 @@ function setStatusLine(prefix, key, message) {
   if (!process.stdout.isTTY) {
     const line = statusLines.get(id);
     console.log(`[${line.time}] [${line.prefix}] ${line.key}: ${line.message}`);
-  } else {
-    renderStatusDashboard();
+    return;
   }
+
+  renderStatusDashboard();
 }
 
 // Clears the terminal and redraws all known status lines.

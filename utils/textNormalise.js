@@ -132,8 +132,13 @@ function levenshtein(a, b) {
     Array(b.length + 1).fill(0)
   );
 
-  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
-  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 0; i <= a.length; i++) {
+    dp[i][0] = i;
+  }
+
+  for (let j = 0; j <= b.length; j++) {
+    dp[0][j] = j;
+  }
 
   for (let i = 1; i <= a.length; i++) {
     for (let j = 1; j <= b.length; j++) {

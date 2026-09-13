@@ -8,7 +8,7 @@ const {
 } = process.env;
 
 async function getUser(login) {
-  const res = await fetch(
+  const response = await fetch(
     `https://api.twitch.tv/helix/users?login=${encodeURIComponent(login)}`,
     {
       headers: {
@@ -18,9 +18,9 @@ async function getUser(login) {
     }
   );
 
-  const data = await res.json();
+  const data = await response.json();
 
-  if (!res.ok) {
+  if (!response.ok) {
     throw new Error(JSON.stringify(data, null, 2));
   }
 
@@ -54,6 +54,6 @@ async function main() {
   });
 }
 
-main().catch((err) => {
-  console.error("Failed:", err.message);
+main().catch((error) => {
+  console.error("Failed:", error.message);
 });

@@ -1,18 +1,30 @@
 // utils/twitchApi.js
+
 const { ensureValidToken, getAccessToken } = require("../tokenManager");
 
 // Reload the shared token for each API call; other bot processes may have
 // rotated it. Only retry a definite 401, never an ambiguous failed POST.
 async function fetchWithAuth(url, options, { tokenProfile, accessToken }) {
   let token = tokenProfile ? getAccessToken(tokenProfile) : accessToken;
+
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await fetch(url, {
       ...options,
-      headers: { ...options.headers, Authorization: `Bearer ${token}` },
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+      },
       signal: AbortSignal.timeout(15_000),
     });
-    if (response.status !== 401 || !tokenProfile || attempt === 1) return response;
-    if (response.body) await response.body.cancel();
+
+    if (response.status !== 401 || !tokenProfile || attempt === 1) {
+      return response;
+    }
+
+    if (response.body) {
+      await response.body.cancel();
+    }
+
     token = (await ensureValidToken(tokenProfile)).accessToken;
   }
 }
@@ -37,13 +49,17 @@ async function deleteMessage({
   url.searchParams.set("moderator_id", moderatorId);
   url.searchParams.set("message_id", messageId);
 
-  const res = await fetchWithAuth(url, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Client-Id": clientId,
+  const res = await fetchWithAuth(
+    url,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Client-Id": clientId,
+      },
     },
-  }, { tokenProfile, accessToken });
+    { tokenProfile, accessToken }
+  );
 
   if (!res.ok) {
     const text = await res.text();
@@ -72,20 +88,24 @@ async function warnUser({
   url.searchParams.set("broadcaster_id", broadcasterId);
   url.searchParams.set("moderator_id", moderatorId);
 
-  const res = await fetchWithAuth(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Client-Id": clientId,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      data: {
-        user_id: userId,
-        reason,
+  const res = await fetchWithAuth(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Client-Id": clientId,
+        "Content-Type": "application/json",
       },
-    }),
-  }, { tokenProfile, accessToken });
+      body: JSON.stringify({
+        data: {
+          user_id: userId,
+          reason,
+        },
+      }),
+    },
+    { tokenProfile, accessToken }
+  );
 
   if (!res.ok) {
     const text = await res.text();
@@ -94,8 +114,8 @@ async function warnUser({
 }
 
 // Times out a user for a set duration.
-// This uses Twitch's bans endpoint, but because duration is included, it is a timeout, not a permanent ban.
-// Requires moderator:manage:banned_users scope.
+// The bans endpoint becomes a timeout when duration is included rather than a
+// permanent ban. Requires moderator:manage:banned_users scope.
 async function timeoutUser({
   userId,
   durationSeconds,
@@ -115,26 +135,27 @@ async function timeoutUser({
   url.searchParams.set("broadcaster_id", broadcasterId);
   url.searchParams.set("moderator_id", moderatorId);
 
-  const res = await fetchWithAuth(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Client-Id": clientId,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      data: {
-        user_id: userId,
-
-        // IMPORTANT:
-        // duration makes this a timeout.
-        // Without duration, Twitch treats it as a permanent ban.
-        duration: durationSeconds,
-
-        reason,
+  const res = await fetchWithAuth(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Client-Id": clientId,
+        "Content-Type": "application/json",
       },
-    }),
-  }, { tokenProfile, accessToken });
+      body: JSON.stringify({
+        data: {
+          user_id: userId,
+
+          // Without duration, Twitch treats this as a permanent ban.
+          duration: durationSeconds,
+          reason,
+        },
+      }),
+    },
+    { tokenProfile, accessToken }
+  );
 
   if (!res.ok) {
     const text = await res.text();
@@ -144,20 +165,31 @@ async function timeoutUser({
 
 // Checks Twitch Helix API to see whether the broadcaster is live.
 // Returns true if live, false if offline.
-async function isStreamLive({ broadcasterId, accessToken, tokenProfile, clientId }) {
+async function isStreamLive({
+  broadcasterId,
+  accessToken,
+  tokenProfile,
+  clientId,
+}) {
   const url = new URL("https://api.twitch.tv/helix/streams");
   url.searchParams.set("user_id", broadcasterId);
 
-  const res = await fetchWithAuth(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Client-Id": clientId,
+  const res = await fetchWithAuth(
+    url,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Client-Id": clientId,
+      },
     },
-  }, { tokenProfile, accessToken });
+    { tokenProfile, accessToken }
+  );
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Live check failed: ${res.status} ${res.statusText}: ${text}`);
+    throw new Error(
+      `Live check failed: ${res.status} ${res.statusText}: ${text}`
+    );
   }
 
   const data = await res.json();
