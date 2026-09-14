@@ -1,7 +1,7 @@
 // auth.js
 // Usage:
-//   node auth.js bot   -> authorise rynoxbot, prints ACCESS_TOKEN / REFRESH_TOKEN
-//   node auth.js join  -> authorise itsnotrynox, prints JOIN_ACCESS_TOKEN / JOIN_REFRESH_TOKEN
+//   node auth.js bot   -> authorise bot account, prints ACCESS_TOKEN / REFRESH_TOKEN
+//   node auth.js join  -> authorise personal account, prints JOIN_ACCESS_TOKEN / JOIN_REFRESH_TOKEN
 
 require("dotenv").config();
 

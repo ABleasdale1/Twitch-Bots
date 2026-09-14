@@ -58,7 +58,7 @@ const alreadySeenMessage = createMessageDeduper();
 
 // Raffle settings.
 // bot starts the raffle.
-// profile optionally joins the raffle if aj is ON.
+// Personal account optionally joins the raffle if aj is ON.
 const raffleCommand = "!raffle 100000 60";
 const raffleJoinCommand = "!join";
 
@@ -68,7 +68,7 @@ const raffleIntervalMs = 30 * 60 * 1000;
 const raffleStartDelayMs = 10 * 60 * 1000;
 
 // Raffle join delay is randomised to look less robotic.
-// Only itsnotrynox uses this for raffle joins.
+// Only profile account uses this for raffle joins.
 const raffleJoinMinDelayMs = 10 * 1000;
 const raffleJoinMaxDelayMs = 58 * 1000;
 
@@ -266,7 +266,7 @@ function createClients() {
     profile: "bot",
   });
 
-  // Listen using profile account. This avoids both accounts detecting the same
+  // Listen using the personal account. This avoids both accounts detecting the same
   // Tangia message and double-scheduling.
   listenerClient = joinClient;
 
@@ -471,8 +471,8 @@ async function tangiaJoinFromAccounts(reason) {
   );
 }
 
-// Schedules itsnotrynox to join a raffle.
-// rynoxbot does NOT join raffles here. rynoxbot only hosts the raffle.
+// Schedules personal account to join a raffle.
+// bot does NOT join raffles here. bot only hosts the raffle.
 function scheduleRaffleJoin(reason) {
   if (!autoJoinEnabled) {
     setStatusLine(
@@ -549,8 +549,8 @@ function scheduleRaffleJoin(reason) {
 }
 
 // Schedules Tangia join after 5 seconds.
-// itsnotrynox always joins.
-// rynoxbot joins only if rt is ON.
+// personal account always joins.
+// bot joins only if tangia join is enabled.
 function scheduleTangiaJoin(reason) {
   if (shuttingDown || tangiaTimeouts.has(reason)) {
     return;
@@ -584,7 +584,7 @@ function scheduleTangiaJoin(reason) {
 }
 
 // Starts the auto raffle system.
-// rynoxbot hosts the raffle.
+// bot hosts the raffle.
 function startAutoRaffleSystem() {
   if (autoRaffleEnabled) {
     setStatusLine("JOINER", "Auto Raffle", "Already ON");
