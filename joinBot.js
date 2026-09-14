@@ -21,11 +21,11 @@ const { isStreamLive } = require("./utils/twitchApi");
 const {
   TWITCH_CHANNEL,
 
-  // itsnotrynox - personal join account
+  // personal join account
   JOIN_USERNAME,
   JOIN_ACCESS_TOKEN,
 
-  // rynoxbot - bot account, hosts raffles and optionally joins Tangia
+  // bot account, hosts raffles and optionally joins Tangia
   BOT_USERNAME,
 
   CLIENT_ID,
@@ -57,8 +57,8 @@ requireSingleInstance("joinbot", TWITCH_CHANNEL);
 const alreadySeenMessage = createMessageDeduper();
 
 // Raffle settings.
-// rynoxbot starts the raffle.
-// itsnotrynox optionally joins the raffle if aj is ON.
+// bot starts the raffle.
+// profile optionally joins the raffle if aj is ON.
 const raffleCommand = "!raffle 100000 60";
 const raffleJoinCommand = "!join";
 
@@ -108,8 +108,8 @@ const approvedChatCommands = new Set([
 // Who is allowed to control the bot from Twitch chat.
 // Default allowed users:
 // - channel owner
-// - itsnotrynox
-// - rynoxbot
+// - personal account
+// - bot account
 //
 // Optional .env:
 // ADMIN_USERS=someuser,anotheruser
@@ -124,19 +124,18 @@ const adminUsers = [
 ].map((x) => x.toLowerCase());
 
 // Runtime auto-join toggle.
-// This only affects itsnotrynox joining auto raffles.
+// This only affects personal account joining auto raffles.
 // Tangia joins ignore this toggle.
 let autoJoinEnabled = false;
 
 // Runtime auto-raffle toggle.
-// rynoxbot will only host raffles when this is ON.
+// bot will only host raffles when this is ON.
 let autoRaffleEnabled = false;
 
-// Runtime rynoxbot Tangia auto-join toggle.
-// itsnotrynox always joins Tangia.
-// This controls whether rynoxbot also joins Tangia.
-let rynoxBotTangiaJoinEnabled = true;
-
+// Runtime bot Tangia auto-join toggle.
+// personal account always joins Tangia.
+// This controls whether bot also joins Tangia.
+let botTangiaJoinEnabled = true;
 let autoRaffleStartTimeout = null;
 let autoRaffleInterval = null;
 let runtime;
@@ -147,8 +146,8 @@ let raffleJoinTimeout = null;
 const tangiaTimeouts = new Map();
 
 // Twitch clients.
-let botClient; // rynoxbot - hosts raffles, optionally joins Tangia
-let joinClient; // itsnotrynox - joins raffles, always joins Tangia
+let botClient; // bot account hosts raffles, optionally joins Tangia
+let joinClient; // personal account joins raffles, always joins Tangia
 
 // Listener client.
 // We only listen from one client so one Tangia message does not get detected twice.
@@ -171,10 +170,10 @@ async function startJoinBot() {
   initialiseDashboard("Starting join bot...");
 
   try {
-    setStatusLine("JOINER", "Token", "Checking itsnotrynox token...");
+    setStatusLine("JOINER", "Token", "Checking personal account token...");
     await ensureValidToken("join");
 
-    setStatusLine("JOINER", "Token", "Checking rynoxbot token...");
+    setStatusLine("JOINER", "Token", "Checking bot token...");
     await ensureValidToken("bot");
 
     setStatusLine("JOINER", "Token", "Tokens ready");
@@ -267,7 +266,7 @@ function createClients() {
     profile: "bot",
   });
 
-  // Listen using itsnotrynox. This avoids both accounts detecting the same
+  // Listen using profile account. This avoids both accounts detecting the same
   // Tangia message and double-scheduling.
   listenerClient = joinClient;
 
@@ -426,8 +425,8 @@ async function replyToChat(message) {
 }
 
 // Sends !join for Tangia.
-// itsnotrynox always joins.
-// rynoxbot only joins if rynoxBotTangiaJoinEnabled is ON.
+// personal account always joins.
+// bot account only joins if botTangiaJoinEnabled is ON.
 async function tangiaJoinFromAccounts(reason) {
   const results = [];
 
@@ -436,8 +435,8 @@ async function tangiaJoinFromAccounts(reason) {
     await sayFromClient(joinClient, JOIN_USERNAME, raffleJoinCommand, reason)
   );
 
-  // rynoxbot Tangia joining is toggleable.
-  if (rynoxBotTangiaJoinEnabled) {
+  // bot Tangia joining is toggleable.
+  if (botTangiaJoinEnabled) {
     results.push(
       await sayFromClient(botClient, BOT_USERNAME, raffleJoinCommand, reason)
     );
@@ -459,7 +458,7 @@ async function tangiaJoinFromAccounts(reason) {
   tangiaJoinsThisRun += successNames.length;
   updateTotalsLine();
 
-  const skippedText = rynoxBotTangiaJoinEnabled
+  const skippedText = botTangiaJoinEnabled
     ? ""
     : ` | ${BOT_USERNAME} skipped`;
 
@@ -558,7 +557,7 @@ function scheduleTangiaJoin(reason) {
   }
 
   const joinDelaySeconds = Math.round(tangiaJoinDelayMs / 1000);
-  const tangiaAccounts = rynoxBotTangiaJoinEnabled
+  const tangiaAccounts = botTangiaJoinEnabled
     ? `${JOIN_USERNAME}+${BOT_USERNAME}`
     : `${JOIN_USERNAME} only`;
 
@@ -681,11 +680,11 @@ async function handleBotCommand(command, source = "terminal") {
       "JOINER",
       "Auto Join",
       `OFF for raffles. Tangia still joins from ${JOIN_USERNAME}${
-        rynoxBotTangiaJoinEnabled ? `+${BOT_USERNAME}` : ""
+        botTangiaJoinEnabled ? `+${BOT_USERNAME}` : ""
       }`
     );
     return `Auto join is OFF for raffles. Tangia still joins from ${JOIN_USERNAME}${
-      rynoxBotTangiaJoinEnabled ? ` + ${BOT_USERNAME}` : ""
+      botTangiaJoinEnabled ? ` + ${BOT_USERNAME}` : ""
     }.`;
   }
 
@@ -693,12 +692,12 @@ async function handleBotCommand(command, source = "terminal") {
     return `Auto join is currently ${
       autoJoinEnabled ? "ON" : "OFF"
     } for ${JOIN_USERNAME} raffle joins. Tangia is always ON for ${JOIN_USERNAME}${
-      rynoxBotTangiaJoinEnabled ? ` + ${BOT_USERNAME}` : ""
+      botTangiaJoinEnabled ? ` + ${BOT_USERNAME}` : ""
     }.`;
   }
 
   if (command === "rt on") {
-    rynoxBotTangiaJoinEnabled = true;
+    botTangiaJoinEnabled = true;
     setStatusLine(
       "JOINER",
       "Tangia",
@@ -708,7 +707,7 @@ async function handleBotCommand(command, source = "terminal") {
   }
 
   if (command === "rt off") {
-    rynoxBotTangiaJoinEnabled = false;
+    botTangiaJoinEnabled = false;
     setStatusLine(
       "JOINER",
       "Tangia",
@@ -722,7 +721,7 @@ async function handleBotCommand(command, source = "terminal") {
 
   if (command === "rt status") {
     return `${JOIN_USERNAME} always joins Tangia. ${BOT_USERNAME} Tangia auto-join is currently ${
-      rynoxBotTangiaJoinEnabled ? "ON" : "OFF"
+      botTangiaJoinEnabled ? "ON" : "OFF"
     }.`;
   }
 
@@ -868,10 +867,10 @@ function setupJoinEvents() {
 }
 
 // Runs the automatic raffle flow.
-// 1. Checks rynoxbot token.
+// 1. Checks bot token.
 // 2. Checks if stream is live.
-// 3. rynoxbot sends !raffle.
-// 4. If auto raffle join is enabled, itsnotrynox sends !join after random delay.
+// 3. bot sends !raffle.
+// 4. If auto raffle join is enabled, personal account sends !join after random delay.
 // If stream is offline, auto raffle turns OFF but the bot stays running.
 async function runAutoRaffle() {
   if (!autoRaffleEnabled || shuttingDown || raffleRunInProgress) {

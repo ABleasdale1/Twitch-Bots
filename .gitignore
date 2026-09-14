@@ -3,6 +3,7 @@
 
 # Runtime state / user data
 data/
+fixed-suite/*.service
 
 # Dependencies
 node_modules/
