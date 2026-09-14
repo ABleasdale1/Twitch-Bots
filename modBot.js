@@ -113,7 +113,7 @@ async function startModBot() {
   modStats = loadModStats();
 
   try {
-    setStatusLine("MOD", "Token", "Checking rynoxbot token...");
+    setStatusLine("MOD", "Token", "Checking bot token...");
     await ensureValidToken("bot");
     setStatusLine("MOD", "Token", "Token ready");
   } catch (error) {
