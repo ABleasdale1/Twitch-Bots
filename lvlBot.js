@@ -102,6 +102,7 @@ const botUsernames = new Set([
   "fossabot",
   "sery_bot",
   "wizebot",
+  "lumiastream",
 ]);
 
 // -----------------------------------------------------------------------------
