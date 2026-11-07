@@ -815,10 +815,21 @@ function setupJoinEvents() {
         const chatCommand = normaliseChatCommand(message);
 
         if (message.trim().toLowerCase() === "~date") {
-          const uk = getSysTime("en-GB", "Europe/London");
-          const us = getSysTime("en-US", "America/New_York");
+          const now = new Date();
 
-          await replyToChat(`🇬🇧 UK: ${uk} | 🇺🇸 US East: ${us}`);
+          const formatTime = (locale, timeZone) =>
+            now.toLocaleString(locale, {
+              weekday: "long",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone,
+              timeZoneName: "short",
+            });
+
+          const uk = formatTime("en-GB", "Europe/London");
+          const us = formatTime("en-US", "America/New_York");
+
+          await replyToChat(`🇬🇧 RynoTime: ${uk} | 🇺🇸 SallyTime: ${us}`);
           return;
         }
 
