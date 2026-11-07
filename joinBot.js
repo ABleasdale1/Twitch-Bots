@@ -15,8 +15,8 @@ const { createMessageDeduper } = require("./utils/messageDeduper");
 const readline = require("readline");
 
 const { ensureValidToken } = require("./tokenManager");
-const { setStatusLine } = require("./utils/logger");
 const { isStreamLive } = require("./utils/twitchApi");
+const { setStatusLine, getSysTime } = require("./utils/logger");
 
 const {
   TWITCH_CHANNEL,
@@ -103,6 +103,7 @@ const approvedChatCommands = new Set([
   "rt status",
 
   "refresh",
+  "date",
 ]);
 
 // Who is allowed to control the bot from Twitch chat.
@@ -812,6 +813,14 @@ function setupJoinEvents() {
         // Approved chat commands only. Anything else, including normal
         // !commands, is ignored.
         const chatCommand = normaliseChatCommand(message);
+
+        if (message.trim().toLowerCase() === "~date") {
+          const uk = getSysTime("en-GB", "Europe/London");
+          const us = getSysTime("en-US", "America/New_York");
+
+          await replyToChat(`🇬🇧 UK: ${uk} | 🇺🇸 US East: ${us}`);
+          return;
+        }
 
         if (chatCommand) {
           if (!isChatAdmin(tags)) {

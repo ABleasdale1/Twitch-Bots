@@ -7,9 +7,10 @@ const readline = require("readline");
 const statusLines = new Map();
 
 // Returns local system time in UK-style 24-hour format for logs.
-function getSysTime() {
-  return new Date().toLocaleString("en-GB", {
+function getSysTime(locale = "en-GB", timeZone) {
+  return new Date().toLocaleString(locale, {
     hour12: false,
+    ...(timeZone ? { timeZone, timeZoneName: "short" } : {}),
   });
 }
 
